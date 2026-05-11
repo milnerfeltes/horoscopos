@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#07040f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Horóscopo">
+<title>Horóscopo Cósmico</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+button,a,[role="button"]{touch-action:manipulation}
+input,textarea,select{font-size:16px!important} /* prevent iOS auto-zoom */
+:root{
+  --deep:#07040f;--card:rgba(255,255,255,0.05);--border:rgba(255,255,255,0.11);
+  --gold:#e8c46a;--purple:#a78bfa;--teal:#5eead4;--red:#f87171;--green:#4ade80;
+  --text:#e2d9f3;--muted:rgba(226,217,243,0.5);
+  --safe-top:env(safe-area-inset-top,0px);--safe-bot:env(safe-area-inset-bottom,0px);
+  --safe-left:env(safe-area-inset-left,0px);--safe-right:env(safe-area-inset-right,0px);
+}
+html{scroll-behavior:smooth}
+body{background:var(--deep);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Georgia,serif;min-height:100vh;min-height:100dvh;overflow-x:hidden;padding-bottom:calc(1rem + var(--safe-bot));overscroll-behavior-y:contain}
+canvas#stars{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none}
+.orbit{position:fixed;border-radius:50%;z-index:0;pointer-events:none;top:50%;left:50%;transform:translate(-50%,-50%)}
+.orbit-1{width:min(700px,180vw);height:min(700px,180vw);border:1px solid rgba(167,139,250,0.05);animation:spin 80s linear infinite}
+.orbit-2{width:min(450px,120vw);height:min(450px,120vw);border:1px solid rgba(232,196,106,0.04);animation:spin 50s linear infinite reverse}
+.orbit-3{width:min(250px,70vw);height:min(250px,70vw);border:1px solid rgba(94,234,212,0.04);animation:spin 30s linear infinite}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+.wrap{position:relative;z-index:1;max-width:840px;margin:0 auto;padding:0 1rem 2rem;padding-left:calc(1rem + var(--safe-left));padding-right:calc(1rem + var(--safe-right))}
+
+/* header */
+header{text-align:center;padding:calc(1.5rem + var(--safe-top)) 0 1.25rem}
+.star-logo{font-size:2.6rem;display:block;animation:pulse-glow 3s ease-in-out infinite}
+@keyframes pulse-glow{0%,100%{filter:drop-shadow(0 0 10px rgba(232,196,106,.5))}50%{filter:drop-shadow(0 0 24px rgba(232,196,106,.9))}}
+h1{font-size:clamp(1.5rem,6vw,2.4rem);font-weight:400;letter-spacing:.1em;background:linear-gradient(135deg,#e8c46a 0%,#a78bfa 50%,#5eead4 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:.25rem 0 .15rem}
+.date-line{font-size:clamp(.65rem,.7rem + .3vw,.78rem);color:var(--muted);letter-spacing:.08em;font-family:sans-serif;text-transform:uppercase}
+
+.section-label{text-align:center;font-size:.65rem;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;margin:1.4rem 0 .7rem;font-family:sans-serif}
+
+/* sign grid */
+.sign-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-bottom:1.25rem}
+.sign-btn{display:flex;flex-direction:column;align-items:center;padding:10px 6px 8px;border-radius:14px;border:1px solid var(--border);background:var(--card);cursor:pointer;gap:5px;transition:border-color .2s,background .2s,box-shadow .2s,transform .12s;will-change:transform;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);min-height:72px}
+.sign-btn:active{transform:scale(.93)}
+.sign-btn.active{background:rgba(232,196,106,.08);border-color:rgba(232,196,106,.55);box-shadow:0 0 20px rgba(232,196,106,.2),inset 0 0 14px rgba(232,196,106,.05)}
+.sign-icon-wrap{width:38px;height:38px;flex-shrink:0;transition:transform .2s;filter:drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.sign-btn:active .sign-icon-wrap{transform:scale(.92)}
+.sign-btn.active .sign-icon-wrap{filter:drop-shadow(0 0 8px rgba(232,196,106,.55)) drop-shadow(0 2px 6px rgba(0,0,0,.5))}
+.sign-btn .nm{font-size:.58rem;color:var(--muted);letter-spacing:.04em;font-family:sans-serif;text-align:center;line-height:1}
+.sign-btn.active .nm{color:var(--gold)}
+
+/* tabs */
+.tabs{display:flex;border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:1.25rem;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.tab-btn{flex:1;padding:11px 4px;font-size:clamp(.68rem,.7rem + .2vw,.8rem);font-family:sans-serif;background:transparent;border:none;border-right:1px solid var(--border);cursor:pointer;color:var(--muted);letter-spacing:.04em;transition:background .15s,color .15s;min-height:44px}
+.tab-btn:last-child{border-right:none}
+.tab-btn:active{background:rgba(255,255,255,.05)}
+.tab-btn.active{background:rgba(232,196,106,.1);color:var(--gold)}
+.panel{display:none}.panel.active{display:block}
+
+/* card */
+.gcard{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:1.25rem;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);will-change:transform;transition:box-shadow .3s}
+
+/* result header */
+.res-header{display:flex;align-items:center;gap:14px;margin-bottom:1rem;padding-bottom:1rem;border-bottom:1px solid var(--border)}
+.header-icon-wrap{width:72px;height:72px;flex-shrink:0;animation:floaty 4s ease-in-out infinite;filter:drop-shadow(0 4px 14px rgba(0,0,0,.6))}
+@keyframes floaty{0%,100%{transform:translateY(0) rotate(-1.5deg)}50%{transform:translateY(-8px) rotate(1.5deg)}}
+.sign-meta h2{font-size:clamp(1.2rem,4vw,1.5rem);font-weight:400;color:var(--gold);letter-spacing:.06em}
+.sign-meta p{font-size:.74rem;color:var(--muted);font-family:sans-serif;margin-top:3px}
+.horo-text{font-size:clamp(.88rem,1rem,1rem);line-height:1.85;color:var(--text);margin-bottom:1.25rem}
+
+/* meters */
+.meters{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:1.25rem}
+.meter{background:rgba(255,255,255,0.03);border-radius:10px;padding:10px 12px;border:1px solid var(--border)}
+.m-label{font-size:.65rem;color:var(--muted);margin-bottom:6px;font-family:sans-serif;text-transform:uppercase;letter-spacing:.09em}
+.m-bar{height:4px;background:rgba(255,255,255,0.07);border-radius:2px;overflow:hidden}
+.m-fill{height:100%;border-radius:2px;transition:width .9s cubic-bezier(.34,1.56,.64,1)}
+.f-love{background:linear-gradient(90deg,#f472b6,#ec4899)}
+.f-work{background:linear-gradient(90deg,#60a5fa,#3b82f6)}
+.f-energy{background:linear-gradient(90deg,#4ade80,#22c55e)}
+.f-luck{background:linear-gradient(90deg,#fbbf24,#f59e0b)}
+.m-val{font-size:.64rem;color:var(--muted);margin-top:4px;text-align:right;font-family:sans-serif}
+
+/* tags */
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1.25rem}
+.tag{font-size:.68rem;padding:4px 11px;border-radius:20px;border:1px solid rgba(167,139,250,.3);color:var(--purple);font-family:sans-serif;background:rgba(167,139,250,.07)}
+
+/* lucky */
+.lucky-row{display:flex;gap:16px;flex-wrap:wrap}
+.li{display:flex;flex-direction:column;gap:2px}
+.li .lk{font-size:.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;font-family:sans-serif}
+.li .lv{font-size:.86rem;color:var(--gold);font-family:sans-serif}
+
+/* questions */
+.q-intro{font-size:.82rem;color:var(--muted);margin-bottom:1rem;font-family:sans-serif;line-height:1.55}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+.preset-btn{padding:11px 12px;font-size:.76rem;font-family:sans-serif;text-align:left;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:11px;cursor:pointer;color:var(--text);line-height:1.4;transition:all .18s;min-height:44px}
+.preset-btn:active{background:rgba(167,139,250,.15);transform:scale(.97)}
+.preset-btn.sel{border-color:rgba(232,196,106,.5);background:rgba(232,196,106,.08);color:var(--gold);box-shadow:0 0 12px rgba(232,196,106,.16)}
+.cust-area{margin-bottom:1rem}
+.cust-area label{font-size:.71rem;color:var(--muted);display:block;margin-bottom:6px;font-family:sans-serif}
+.cust-row{display:flex;gap:8px}
+.cust-row input{flex:1;font-family:sans-serif;font-size:1rem;padding:11px 14px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:var(--text);outline:none;transition:border-color .2s,box-shadow .2s;-webkit-appearance:none;appearance:none;min-height:44px}
+.cust-row input:focus{border-color:rgba(167,139,250,.5);box-shadow:0 0 14px rgba(167,139,250,.13)}
+.cust-row input::placeholder{color:rgba(226,217,243,.28)}
+.ask-btn{padding:11px 16px;font-size:.84rem;font-family:sans-serif;background:rgba(232,196,106,.1);border:1px solid rgba(232,196,106,.38);border-radius:10px;cursor:pointer;color:var(--gold);white-space:nowrap;transition:all .18s;letter-spacing:.04em;min-height:44px}
+.ask-btn:active{background:rgba(232,196,106,.22);transform:scale(.96)}
+
+@keyframes flip-in{from{opacity:0;transform:perspective(500px) rotateX(55deg) scale(.96)}to{opacity:1;transform:perspective(500px) rotateX(0) scale(1)}}
+.answer-wrap{margin-top:1.25rem;background:rgba(167,139,250,.06);border-radius:14px;padding:1.25rem;border:1px solid rgba(167,139,250,.18);animation:flip-in .55s cubic-bezier(.34,1.2,.64,1) both}
+.a-label{font-size:.6rem;color:var(--purple);text-transform:uppercase;letter-spacing:.14em;margin-bottom:6px;font-family:sans-serif}
+.a-q{font-size:.88rem;color:var(--text);margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);font-family:sans-serif}
+.a-text{font-size:clamp(.88rem,.9rem,1rem);line-height:1.8;color:var(--text)}
+.verdict{display:inline-block;margin-top:12px;padding:5px 15px;border-radius:20px;font-size:.72rem;font-family:sans-serif;letter-spacing:.06em}
+.v-yes{background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.28)}
+.v-no{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.28)}
+.v-maybe{background:rgba(251,191,36,.1);color:#fbbf24;border:1px solid rgba(251,191,36,.28)}
+
+/* history */
+.hist-list{display:flex;flex-direction:column;gap:9px}
+.hist-item{background:rgba(255,255,255,.03);border-radius:12px;padding:12px 14px;border:1px solid var(--border);cursor:pointer;transition:all .18s;min-height:44px}
+.hist-item:active{background:rgba(167,139,250,.1);transform:scale(.985)}
+.h-q{font-size:.83rem;color:var(--text);margin-bottom:4px;font-family:sans-serif}
+.h-a{font-size:.72rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:sans-serif}
+.h-meta{font-size:.62rem;color:rgba(226,217,243,.28);margin-top:4px;display:flex;gap:8px;align-items:center;font-family:sans-serif;flex-wrap:wrap}
+.empty{text-align:center;padding:2.5rem;color:var(--muted);font-family:sans-serif;line-height:1.6}
+
+/* share */
+.share-bar{margin-top:1.5rem;padding:1rem 1.25rem;background:var(--card);border:1px solid var(--border);border-radius:16px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.share-top{display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap}
+.share-lbl{font-size:.7rem;color:var(--muted);font-family:sans-serif;white-space:nowrap}
+.share-url{flex:1;min-width:0;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:monospace;font-size:.68rem;color:var(--muted);outline:none;cursor:text;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.share-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.shr-btn{padding:13px 10px;font-size:.8rem;font-family:sans-serif;border-radius:11px;cursor:pointer;transition:all .18s;min-height:48px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:500;border-width:1px;border-style:solid}
+.shr-btn:active{transform:scale(.96)}
+.copy-btn{background:rgba(94,234,212,.08);border-color:rgba(94,234,212,.32);color:var(--teal)}
+.copy-btn:active{background:rgba(94,234,212,.2)}
+.wa-btn{background:rgba(74,222,128,.08);border-color:rgba(74,222,128,.3);color:#4ade80}
+.wa-btn:active{background:rgba(74,222,128,.2)}
+.native-share-btn{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.32);color:var(--purple);display:none}
+.native-share-btn.vis{display:flex}
+.native-share-btn:active{background:rgba(167,139,250,.2)}
+.file-share-btn{background:rgba(232,196,106,.08);border-color:rgba(232,196,106,.3);color:var(--gold)}
+.file-share-btn:active{background:rgba(232,196,106,.2)}
+
+/* placeholder */
+.placeholder{text-align:center;padding:4rem 1.5rem}
+.ph-icon{width:90px;height:90px;margin:0 auto 1.2rem;animation:floaty 3.5s ease-in-out infinite;filter:drop-shadow(0 0 24px rgba(232,196,106,.5))}
+.ph-text{font-size:.92rem;color:var(--muted);font-family:sans-serif;max-width:280px;margin:0 auto;line-height:1.7}
+
+/* save / install bar */
+.save-bar{background:linear-gradient(135deg,rgba(167,139,250,.07),rgba(232,196,106,.05));border:1px solid rgba(167,139,250,.18);border-radius:16px;padding:1rem 1.25rem;margin-bottom:1rem}
+.save-bar h3{font-size:.72rem;letter-spacing:.12em;color:var(--purple);text-transform:uppercase;font-family:sans-serif;margin-bottom:.65rem;font-weight:600}
+.save-btns{display:flex;gap:8px;flex-wrap:wrap}
+.dl-btn{flex:1;min-width:130px;padding:11px 14px;font-size:.82rem;font-family:sans-serif;background:rgba(232,196,106,.1);border:1px solid rgba(232,196,106,.4);border-radius:10px;cursor:pointer;color:var(--gold);transition:all .18s;min-height:44px;display:flex;align-items:center;justify-content:center;gap:6px;font-weight:500}
+.dl-btn:active{background:rgba(232,196,106,.22);transform:scale(.97)}
+.pwa-btn{flex:1;min-width:130px;padding:11px 14px;font-size:.82rem;font-family:sans-serif;background:rgba(94,234,212,.08);border:1px solid rgba(94,234,212,.35);border-radius:10px;cursor:pointer;color:var(--teal);transition:all .18s;min-height:44px;display:none;align-items:center;justify-content:center;gap:6px;font-weight:500}
+.pwa-btn.vis{display:flex}
+.pwa-btn:active{background:rgba(94,234,212,.18);transform:scale(.97)}
+.ios-hint{font-size:.76rem;color:var(--muted);font-family:sans-serif;margin-top:.75rem;line-height:1.65;padding:.7rem .95rem;background:rgba(255,255,255,.03);border-radius:8px;border:1px solid var(--border);display:none}
+.ios-hint.vis{display:block}
+.ios-hint strong{color:var(--text);font-weight:600}
+.ios-step{margin:.2rem 0}
+.dl-toast{display:none}
+/* legacy compat */
+.install-banner{display:none}.install-text{}.install-btn{}.install-close{}
+
+/* clear history */
+.clear-hist-btn{display:block;width:100%;margin-top:12px;padding:10px;font-size:.75rem;font-family:sans-serif;background:transparent;border:1px solid rgba(248,113,113,.25);border-radius:10px;cursor:pointer;color:var(--red);opacity:.7;transition:all .18s}
+.clear-hist-btn:active{opacity:1;background:rgba(248,113,113,.1)}
+
+/* swipe hint dots */
+.swipe-dots{display:none;justify-content:center;gap:6px;padding:8px 0 2px}
+.swipe-dots span{width:5px;height:5px;border-radius:50%;background:var(--border);transition:background .2s}
+.swipe-dots span.active{background:var(--gold)}
+@media(hover:none){.swipe-dots{display:flex}}
+
+/* sign loading shimmer */
+@keyframes shimmer{0%{opacity:.5}50%{opacity:1}100%{opacity:.5}}
+.sign-btn.loading{animation:shimmer .8s ease-in-out}
+
+/* general toast */
+.toast{position:fixed!important;bottom:calc(1.5rem + var(--safe-bot));left:50%;transform:translateX(-50%) translateY(10px);padding:.65rem 1.4rem;border-radius:20px;font-size:.8rem;font-family:sans-serif;z-index:9999;opacity:0;transition:opacity .3s,transform .3s;pointer-events:none;white-space:nowrap;backdrop-filter:none;-webkit-backdrop-filter:none;max-width:88vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast-ok{background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.4);color:var(--green)}
+.toast-info{background:rgba(167,139,250,.15);border:1px solid rgba(167,139,250,.4);color:var(--purple)}
+.toast-warn{background:rgba(232,196,106,.15);border:1px solid rgba(232,196,106,.4);color:var(--gold)}
+
+/* lucky strip in horoscope card */
+.lucky-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1.1rem}
+.ls-chip{display:flex;align-items:center;gap:5px;font-size:.72rem;font-family:sans-serif;padding:5px 11px;border-radius:20px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
+.ls-chip .lc-key{color:var(--muted)}
+.ls-chip .lc-val{color:var(--gold);font-weight:500}
+
+/* responsive */
+@media(max-width:480px){
+  .sign-grid{grid-template-columns:repeat(4,1fr);gap:7px}
+  .preset-grid{grid-template-columns:1fr}
+  .share-top{flex-wrap:wrap}
+  .share-url{order:3;flex:100%}
+  h1{letter-spacing:.06em}
+}
+@media(max-width:360px){
+  .sign-grid{grid-template-columns:repeat(3,1fr)}
+  .sign-btn .nm{display:none}
+  .sign-icon-wrap{width:32px;height:32px}
+  .sign-btn{min-height:54px;padding:8px 4px}
+}
+@media(min-width:600px){
+  .wrap{padding:0 1.5rem 2.5rem}
+  .preset-grid{grid-template-columns:1fr 1fr}
+  .sign-btn:hover{background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.4)}
+  .sign-btn:hover .sign-icon-wrap{transform:scale(1.08) translateY(-2px)}
+  .hist-item:hover{background:rgba(167,139,250,.08);border-color:rgba(167,139,250,.3)}
+}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+
+/* ─── Mobile performance: strip GPU-heavy effects ─── */
+@media(max-width:680px),(hover:none){
+  /* Remove backdrop blur — #1 mobile GPU killer */
+  .sign-btn,.tabs,.gcard,.share-bar,.save-bar{
+    backdrop-filter:none!important;-webkit-backdrop-filter:none!important
+  }
+  /* Slightly more opaque backgrounds to compensate */
+  .sign-btn{background:rgba(255,255,255,.09)}
+  .sign-btn.active{background:rgba(232,196,106,.14)}
+  .gcard{background:rgba(20,10,40,.75)}
+  .tabs{background:rgba(20,10,40,.7)}
+  .share-bar{background:rgba(20,10,40,.7)}
+  .save-bar{background:rgba(30,15,60,.7)}
+  /* Stop spinning orbit rings — saves CPU/GPU */
+  .orbit{display:none}
+  /* Slow down float animation on selected icon */
+  .header-icon-wrap{animation-duration:7s}
+  /* Simplify transitions */
+  .m-fill{transition-duration:.6s}
+}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<div class="orbit orbit-1"></div>
+<div class="orbit orbit-2"></div>
+<div class="orbit orbit-3"></div>
+
+<div class="wrap">
+  <header>
+    <span class="star-logo">✦</span>
+    <h1>Horóscopo Cósmico</h1>
+    <p class="date-line" id="date-line"></p>
+  </header>
+
+  <!-- save / install bar -->
+  <div class="save-bar" id="save-bar">
+    <h3>📲 Llevar en mi teléfono</h3>
+    <div class="save-btns">
+      <button class="dl-btn" onclick="downloadApp()" aria-label="Descargar app como archivo HTML">⬇ Descargar app</button>
+      <button class="pwa-btn" id="pwa-btn" onclick="pwaInstall()" aria-label="Instalar como app">＋ Instalar app</button>
+    </div>
+    <div class="ios-hint" id="ios-hint">
+      <div class="ios-step">1. Toca <strong>□↑ Compartir</strong> en la barra de Safari</div>
+      <div class="ios-step">2. Selecciona <strong>"Agregar a pantalla de inicio"</strong></div>
+      <div class="ios-step">3. Toca <strong>"Agregar"</strong> — ¡listo, ya tienes la app! ✦</div>
+    </div>
+  </div>
+  <!-- legacy compat -->
+  <div class="install-banner" id="install-banner"></div>
+  <div class="toast" id="toast"></div>
+
+  <p class="section-label">Elige tu signo del zodiaco</p>
+  <div class="sign-grid" id="sign-grid"></div>
+
+  <div id="main-ui" style="display:none">
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('horoscopo')">Horóscopo</button>
+      <button class="tab-btn" onclick="switchTab('preguntas')">Consultar</button>
+      <button class="tab-btn" onclick="switchTab('historial')">Historial</button>
+    </div>
+    <div class="swipe-dots" id="swipe-dots">
+      <span class="active"></span><span></span><span></span>
+    </div>
+    <div class="panel active" id="panel-horoscopo"></div>
+    <div class="panel" id="panel-preguntas"></div>
+    <div class="panel" id="panel-historial"></div>
+
+    <div class="share-bar">
+      <div class="share-top">
+        <span class="share-lbl">Compartir tu signo:</span>
+        <input type="text" class="share-url" id="share-url" readonly onclick="this.select()"/>
+      </div>
+      <div class="share-btns">
+        <button class="shr-btn copy-btn" onclick="copyLink()" aria-label="Copiar enlace">📋 Copiar enlace</button>
+        <button class="shr-btn wa-btn" onclick="shareWhatsApp()" aria-label="Compartir por WhatsApp">💬 WhatsApp</button>
+        <button class="shr-btn native-share-btn" id="native-share-btn" onclick="nativeShare()" aria-label="Compartir">📤 Compartir</button>
+        <button class="shr-btn file-share-btn" onclick="shareFile()" aria-label="Enviar app">📁 Enviar app</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ph">
+    <div class="placeholder">
+      <div class="ph-icon" id="ph-icon"></div>
+      <p class="ph-text">Selecciona tu signo del zodiaco para que los astros revelen lo que el universo tiene para ti hoy</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ─── Security: HTML escape (prevents XSS from user input) ─── */
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+/* ─── Touch detection ─── */
+const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+/* ─── Reset DOM for downloaded-file reuse (fixes duplicate signs) ─── */
+(function(){
+  const sg = document.getElementById('sign-grid');
+  if (sg) sg.innerHTML = '';
+  const phi = document.getElementById('ph-icon');
+  if (phi) phi.innerHTML = '';
+  const mui = document.getElementById('main-ui');
+  if (mui) mui.style.display = 'none';
+  const ph = document.getElementById('ph');
+  if (ph) ph.style.display = '';
+  ['panel-horoscopo','panel-preguntas','panel-historial'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', i===0));
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active', i===0));
+})();
+
+/* ─── Stars canvas ─── */
+const cv = document.getElementById('stars');
+const cx = cv.getContext('2d');
+let W, H, stars = [];
+function resize() { W = cv.width = innerWidth; H = cv.height = innerHeight; }
+function mkStars() {
+  // Fewer stars on mobile to reduce GPU load
+  const maxN = isTouch ? 55 : 220;
+  const div  = isTouch ? 14000 : 6000;
+  const n = Math.min(maxN, Math.floor(W * H / div));
+  stars = Array.from({length: n}, () => ({
+    x: Math.random()*W, y: Math.random()*H,
+    r: Math.random()*1.4+.2, a: Math.random(),
+    da: (Math.random()-.5)*.006, vy: Math.random()*.08+.008
+  }));
+}
+function paintStars() {
+  cx.clearRect(0,0,W,H);
+  for (const s of stars) {
+    cx.beginPath(); cx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    cx.fillStyle=`rgba(226,217,243,${s.a.toFixed(2)})`; cx.fill();
+  }
+}
+function drawStars() {
+  if (isTouch) {
+    // Static stars on mobile — no animation loop, saves battery
+    paintStars();
+    return;
+  }
+  cx.clearRect(0,0,W,H);
+  for (const s of stars) {
+    s.a += s.da; if(s.a<=0||s.a>=1) s.da*=-1;
+    s.y -= s.vy; if(s.y<0){s.y=H; s.x=Math.random()*W;}
+    cx.beginPath(); cx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    cx.fillStyle=`rgba(226,217,243,${s.a.toFixed(2)})`; cx.fill();
+  }
+  requestAnimationFrame(drawStars);
+}
+addEventListener('resize', () => { resize(); mkStars(); drawStars(); });
+resize(); mkStars(); drawStars();
+
+/* ─── 3D tilt (desktop only) ─── */
+function tilt(el, str) {
+  if (isTouch) return;
+  el.addEventListener('mousemove', e => {
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX-r.left)/r.width-.5, y = (e.clientY-r.top)/r.height-.5;
+    el.style.transform = `perspective(1100px) rotateY(${x*str}deg) rotateX(${-y*str}deg) translateZ(5px)`;
+  });
+  el.addEventListener('mouseleave', () => el.style.transform = '');
+}
+function tiltBtn(el) {
+  if (isTouch) return;
+  el.addEventListener('mousemove', e => {
+    const r = el.getBoundingClientRect();
+    const x = (e.clientX-r.left)/r.width-.5, y = (e.clientY-r.top)/r.height-.5;
+    el.style.transform = `perspective(160px) rotateY(${x*20}deg) rotateX(${-y*20}deg) scale(1.06)`;
+  });
+  el.addEventListener('mouseleave', () => el.style.transform = '');
+}
+
+/* ─── Cosmic Portrait Icons ─── */
+let _uid = 0;
+
+const ELEM = {
+  fire:  { g1:'#d4702a', g2:'#5c1500', g3:'#ffb070', glow:'#c04010', moon:'#f0c060', ring:'rgba(220,110,30,0.9)' },
+  earth: { g1:'#5a9e48', g2:'#1a400e', g3:'#8cd472', glow:'#408030', moon:'#b0e080', ring:'rgba(85,175,55,0.9)' },
+  air:   { g1:'#3898cc', g2:'#092858', g3:'#72c8f0', glow:'#1868b0', moon:'#88ccf0', ring:'rgba(55,155,210,0.9)' },
+  water: { g1:'#28b0b0', g2:'#052830', g3:'#60e0e0', glow:'#108888', moon:'#78d8e0', ring:'rgba(35,175,175,0.9)' },
+};
+
+const SIGN_EL = {
+  'Aries':'fire','Tauro':'earth','Géminis':'air','Cáncer':'water',
+  'Leo':'fire','Virgo':'earth','Libra':'air','Escorpio':'water',
+  'Sagitario':'fire','Capricornio':'earth','Acuario':'air','Piscis':'water'
+};
+
+const FIGS = {
+  Aries: (c,u) => `
+    <path d="M36,68 C22,60 14,44 20,27 C25,12 40,10 46,22 C50,29 47,38 41,42 C36,45 34,53 36,63" fill="${c.g1}"/>
+    <path d="M36,68 C24,61 17,47 22,31 C24,25 29,21 34,22 C29,25 27,32 28,40 C30,49 35,58 37,65" fill="${c.g2}" opacity="0.55"/>
+    <path d="M64,68 C78,60 86,44 80,27 C75,12 60,10 54,22 C50,29 53,38 59,42 C64,45 66,53 64,63" fill="${c.g1}"/>
+    <path d="M64,68 C76,61 83,47 78,31 C76,25 71,21 66,22 C71,25 73,32 72,40 C70,49 65,58 63,65" fill="${c.g2}" opacity="0.55"/>
+    <ellipse cx="50" cy="70" rx="20" ry="15" fill="url(#fg${u})"/>
+    <ellipse cx="50" cy="62" rx="15" ry="11" fill="${c.g1}"/>
+    <ellipse cx="50" cy="70" rx="20" ry="15" fill="url(#fd${u})" opacity="0.55"/>
+    <circle cx="43" cy="69" r="5" fill="#040010"/>
+    <circle cx="44.5" cy="67.5" r="2" fill="rgba(255,255,255,0.75)"/>
+    <circle cx="57" cy="69" r="5" fill="#040010"/>
+    <circle cx="58.5" cy="67.5" r="2" fill="rgba(255,255,255,0.75)"/>
+    <ellipse cx="50" cy="78" rx="7.5" ry="5" fill="${c.g2}" opacity="0.85"/>
+    <circle cx="47.5" cy="78" r="2.5" fill="#040010" opacity="0.8"/>
+    <circle cx="52.5" cy="78" r="2.5" fill="#040010" opacity="0.8"/>
+    <ellipse cx="50" cy="61" rx="11" ry="8" fill="${c.g1}" opacity="0.65"/>
+  `,
+  Tauro: (c,u) => `
+    <path d="M30,20 C24,10 14,9 10,16 C7,22 11,30 18,30" fill="none" stroke="${c.g1}" stroke-width="9" stroke-linecap="round"/>
+    <path d="M70,20 C76,10 86,9 90,16 C93,22 89,30 82,30" fill="none" stroke="${c.g1}" stroke-width="9" stroke-linecap="round"/>
+    <path d="M30,20 C24,10 14,9 10,16 C7,22 11,30 18,30" fill="none" stroke="${c.g2}" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
+    <path d="M70,20 C76,10 86,9 90,16 C93,22 89,30 82,30" fill="none" stroke="${c.g2}" stroke-width="5" stroke-linecap="round" opacity="0.5"/>
+    <ellipse cx="50" cy="65" rx="28" ry="24" fill="url(#fg${u})"/>
+    <ellipse cx="35" cy="70" rx="11" ry="10" fill="${c.g1}" opacity="0.5"/>
+    <ellipse cx="65" cy="70" rx="11" ry="10" fill="${c.g1}" opacity="0.5"/>
+    <ellipse cx="50" cy="65" rx="28" ry="24" fill="url(#fd${u})" opacity="0.5"/>
+    <ellipse cx="50" cy="50" rx="20" ry="14" fill="url(#fg${u})"/>
+    <ellipse cx="50" cy="50" rx="20" ry="14" fill="url(#fd${u})" opacity="0.5"/>
+    <circle cx="42" cy="60" r="5.5" fill="#040010"/>
+    <circle cx="43.5" cy="58.5" r="2.2" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="58" cy="60" r="5.5" fill="#040010"/>
+    <circle cx="59.5" cy="58.5" r="2.2" fill="rgba(255,255,255,0.8)"/>
+    <ellipse cx="50" cy="72" rx="9" ry="6" fill="${c.g2}" opacity="0.8"/>
+    <circle cx="46.5" cy="72" r="3" fill="#040010" opacity="0.7"/>
+    <circle cx="53.5" cy="72" r="3" fill="#040010" opacity="0.7"/>
+    <path d="M43,78 Q50,82 57,78" fill="none" stroke="${c.g2}" stroke-width="2" stroke-linecap="round"/>
+  `,
+  'Géminis': (c,u) => `
+    <path d="M20,36 Q16,28 18,20 Q22,14 28,18" fill="none" stroke="${c.g1}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M80,36 Q84,28 82,20 Q78,14 72,18" fill="none" stroke="${c.g1}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M20,68 Q16,76 18,84 Q22,90 28,86" fill="none" stroke="${c.g1}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M80,68 Q84,76 82,84 Q78,90 72,86" fill="none" stroke="${c.g1}" stroke-width="3" stroke-linecap="round"/>
+    <line x1="20" y1="36" x2="20" y2="68" stroke="${c.g1}" stroke-width="3"/>
+    <line x1="80" y1="36" x2="80" y2="68" stroke="${c.g1}" stroke-width="3"/>
+    <line x1="20" y1="52" x2="80" y2="52" stroke="${c.g3}" stroke-width="2" opacity="0.7"/>
+    <ellipse cx="35" cy="46" rx="15" ry="19" fill="url(#fg${u})" opacity="0.9"/>
+    <ellipse cx="65" cy="46" rx="15" ry="19" fill="url(#fg${u})" opacity="0.9"/>
+    <ellipse cx="35" cy="46" rx="15" ry="19" fill="url(#fd${u})" opacity="0.5"/>
+    <ellipse cx="65" cy="46" rx="15" ry="19" fill="url(#fd${u})" opacity="0.5"/>
+    <circle cx="30" cy="43" r="3.5" fill="#040010"/>
+    <circle cx="31" cy="42" r="1.5" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="40" cy="43" r="3.5" fill="#040010"/>
+    <circle cx="41" cy="42" r="1.5" fill="rgba(255,255,255,0.8)"/>
+    <path d="M29,53 Q35,57 41,53" fill="none" stroke="${c.g2}" stroke-width="1.5" stroke-linecap="round"/>
+    <circle cx="60" cy="43" r="3.5" fill="#040010"/>
+    <circle cx="61" cy="42" r="1.5" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="70" cy="43" r="3.5" fill="#040010"/>
+    <circle cx="71" cy="42" r="1.5" fill="rgba(255,255,255,0.8)"/>
+    <path d="M59,53 Q65,57 71,53" fill="none" stroke="${c.g2}" stroke-width="1.5" stroke-linecap="round"/>
+    <path d="M28,30 Q35,24 42,30" fill="${c.g1}" opacity="0.6"/>
+    <path d="M58,30 Q65,24 72,30" fill="${c.g1}" opacity="0.6"/>
+  `,
+  'Cáncer': (c,u) => `
+    <ellipse cx="50" cy="68" rx="20" ry="15" fill="url(#fg${u})"/>
+    <ellipse cx="50" cy="68" rx="20" ry="15" fill="url(#fd${u})" opacity="0.55"/>
+    <path d="M36,68 C26,62 18,52 22,42 C25,34 32,33 36,38 C38,42 36,48 33,52" fill="${c.g1}"/>
+    <path d="M33,52 C28,46 27,39 30,35 C32,32 37,34 37,38" fill="${c.g1}"/>
+    <path d="M36,68 C27,63 20,55 23,46 C24,42 27,40 30,40 C26,42 25,47 26,53 C28,58 33,63 35,67" fill="${c.g2}" opacity="0.5"/>
+    <path d="M64,68 C74,62 82,52 78,42 C75,34 68,33 64,38 C62,42 64,48 67,52" fill="${c.g1}"/>
+    <path d="M67,52 C72,46 73,39 70,35 C68,32 63,34 63,38" fill="${c.g1}"/>
+    <path d="M64,68 C73,63 80,55 77,46 C76,42 73,40 70,40 C74,42 75,47 74,53 C72,58 67,63 65,67" fill="${c.g2}" opacity="0.5"/>
+    <line x1="44" y1="54" x2="40" y2="43" stroke="${c.g1}" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="40" cy="41" r="5" fill="#040010"/>
+    <circle cx="41.5" cy="39.5" r="2" fill="rgba(255,255,255,0.8)"/>
+    <line x1="56" y1="54" x2="60" y2="43" stroke="${c.g1}" stroke-width="2.5" stroke-linecap="round"/>
+    <circle cx="60" cy="41" r="5" fill="#040010"/>
+    <circle cx="61.5" cy="39.5" r="2" fill="rgba(255,255,255,0.8)"/>
+    <path d="M37,63 Q50,60 63,63" fill="none" stroke="${c.g3}" stroke-width="1.2" opacity="0.55"/>
+    <path d="M35,70 Q50,67 65,70" fill="none" stroke="${c.g3}" stroke-width="1.2" opacity="0.55"/>
+    <path d="M37,77 Q50,74 63,77" fill="none" stroke="${c.g3}" stroke-width="1.2" opacity="0.45"/>
+  `,
+  Leo: (c,u) => `
+    ${Array.from({length:12},(_,i)=>{const a=(i*30-90)*Math.PI/180,a2=(i*30-75)*Math.PI/180;const ox=50+Math.cos(a2)*38,oy=58+Math.sin(a2)*38,px=50+Math.cos(a)*42,py=58+Math.sin(a)*42;return `<path d="M50,58 Q${ox.toFixed(1)},${oy.toFixed(1)} ${px.toFixed(1)},${py.toFixed(1)}" fill="${c.g1}" opacity="${i%2===0?0.85:0.6}"/>`;}).join('')}
+    <circle cx="50" cy="58" r="22" fill="url(#fg${u})"/>
+    <circle cx="50" cy="58" r="22" fill="url(#fd${u})" opacity="0.55"/>
+    <path d="M32,44 L36,34 L42,42 Z" fill="${c.g1}"/>
+    <path d="M68,44 L64,34 L58,42 Z" fill="${c.g1}"/>
+    <circle cx="43" cy="55" r="6" fill="#040010"/>
+    <circle cx="45" cy="53.5" r="2.5" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="57" cy="55" r="6" fill="#040010"/>
+    <circle cx="59" cy="53.5" r="2.5" fill="rgba(255,255,255,0.8)"/>
+    <path d="M45,63 L50,67 L55,63 Q50,61 45,63 Z" fill="${c.g2}" opacity="0.9"/>
+    <circle cx="41" cy="66" r="7" fill="${c.g1}" opacity="0.35"/>
+    <circle cx="59" cy="66" r="7" fill="${c.g1}" opacity="0.35"/>
+    <path d="M44,70 Q50,74 56,70" fill="none" stroke="${c.g2}" stroke-width="2" stroke-linecap="round"/>
+    <line x1="18" y1="65" x2="37" y2="67" stroke="${c.g3}" stroke-width="1" opacity="0.5"/>
+    <line x1="18" y1="68" x2="37" y2="69" stroke="${c.g3}" stroke-width="1" opacity="0.4"/>
+    <line x1="82" y1="65" x2="63" y2="67" stroke="${c.g3}" stroke-width="1" opacity="0.5"/>
+    <line x1="82" y1="68" x2="63" y2="69" stroke="${c.g3}" stroke-width="1" opacity="0.4"/>
+  `,
+  Virgo: (c,u) => `
+    <path d="M30,28 Q20,50 22,76 Q24,84 30,80 Q22,66 26,46" fill="${c.g1}" opacity="0.6"/>
+    <path d="M27,24 Q14,46 16,74 Q14,82 18,78" fill="${c.g1}" opacity="0.35"/>
+    <path d="M70,28 Q80,50 78,76 Q76,84 70,80 Q78,66 74,46" fill="${c.g1}" opacity="0.6"/>
+    <path d="M73,24 Q86,46 84,74 Q86,82 82,78" fill="${c.g1}" opacity="0.35"/>
+    <path d="M30,28 Q36,16 50,18 Q64,16 70,28 Q62,20 50,22 Q38,20 30,28 Z" fill="${c.g1}"/>
+    <ellipse cx="50" cy="50" rx="22" ry="26" fill="url(#fg${u})"/>
+    <ellipse cx="50" cy="50" rx="22" ry="26" fill="url(#fd${u})" opacity="0.5"/>
+    <ellipse cx="42" cy="46" rx="5" ry="4.5" fill="#040010"/>
+    <circle cx="43.5" cy="44.5" r="2" fill="rgba(255,255,255,0.8)"/>
+    <path d="M38,43 Q42,40 46,43" fill="none" stroke="${c.g3}" stroke-width="1.3" stroke-linecap="round"/>
+    <ellipse cx="58" cy="46" rx="5" ry="4.5" fill="#040010"/>
+    <circle cx="59.5" cy="44.5" r="2" fill="rgba(255,255,255,0.8)"/>
+    <path d="M54,43 Q58,40 62,43" fill="none" stroke="${c.g3}" stroke-width="1.3" stroke-linecap="round"/>
+    <path d="M49,53 Q50,57 51,53" fill="none" stroke="${c.g2}" stroke-width="1.5"/>
+    <path d="M47,57 Q50,59 53,57" fill="none" stroke="${c.g2}" stroke-width="1.3"/>
+    <path d="M44,63 Q50,67 56,63" fill="${c.g1}" opacity="0.65"/>
+    <path d="M20,82 Q24,75 30,80 Q28,72 35,74 Q33,67 40,70" fill="none" stroke="${c.g3}" stroke-width="2" stroke-linecap="round"/>
+    <ellipse cx="20" cy="83" rx="4" ry="6" fill="${c.g1}" opacity="0.65" transform="rotate(-20 20 83)"/>
+    <ellipse cx="30" cy="80" rx="4" ry="5" fill="${c.g1}" opacity="0.65" transform="rotate(15 30 80)"/>
+    <ellipse cx="38" cy="70" rx="3.5" ry="5" fill="${c.g1}" opacity="0.65" transform="rotate(-8 38 70)"/>
+  `,
+  Libra: (c,u) => `
+    <path d="M25,36 Q50,25 75,36" fill="none" stroke="${c.g3}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M22,40 Q50,28 78,40" fill="none" stroke="${c.g1}" stroke-width="1.2" opacity="0.5"/>
+    <circle cx="50" cy="34" r="5" fill="${c.g3}" opacity="0.7" filter="url(#gf${u})"/>
+    <circle cx="50" cy="34" r="3.5" fill="${c.g3}" opacity="0.9"/>
+    <rect x="48" y="39" width="4" height="38" fill="url(#fg${u})" rx="2"/>
+    <rect x="20" y="39" width="60" height="5" fill="url(#fg${u})" rx="2.5"/>
+    <rect x="20" y="39" width="60" height="5" fill="url(#fd${u})" opacity="0.4" rx="2.5"/>
+    <line x1="27" y1="44" x2="22" y2="63" stroke="${c.g3}" stroke-width="1.5" stroke-dasharray="2,2"/>
+    <line x1="73" y1="44" x2="78" y2="63" stroke="${c.g3}" stroke-width="1.5" stroke-dasharray="2,2"/>
+    <path d="M10,63 Q22,59 34,63 Q28,73 18,73 Z" fill="url(#fg${u})"/>
+    <path d="M10,63 Q22,59 34,63 Q28,73 18,73 Z" fill="url(#fd${u})" opacity="0.5"/>
+    <path d="M66,63 Q78,59 90,63 Q84,73 72,73 Z" fill="url(#fg${u})"/>
+    <path d="M66,63 Q78,59 90,63 Q84,73 72,73 Z" fill="url(#fd${u})" opacity="0.5"/>
+    <path d="M36,77 Q50,73 64,77 Q58,85 42,85 Z" fill="url(#fg${u})" opacity="0.7"/>
+    <circle cx="20" cy="67" r="2" fill="${c.g3}" opacity="0.8"/>
+    <circle cx="76" cy="67" r="2" fill="${c.g3}" opacity="0.8"/>
+  `,
+  Escorpio: (c,u) => `
+    <path d="M63,55 C74,50 82,40 78,30 C74,22 64,22 60,28 C58,33 60,40 64,44" fill="${c.g1}"/>
+    <path d="M64,44 C68,38 70,30 67,26 C65,22 59,24 59,28" fill="${c.g1}"/>
+    <path d="M63,55 C72,52 80,44 77,35 C75,30 71,28 67,28 C71,30 73,36 72,42 C71,47 66,52 64,54" fill="${c.g2}" opacity="0.5"/>
+    <path d="M37,55 C26,50 18,40 22,30 C26,22 36,22 40,28 C42,33 40,40 36,44" fill="${c.g1}"/>
+    <path d="M36,44 C32,38 30,30 33,26 C35,22 41,24 41,28" fill="${c.g1}"/>
+    <path d="M37,55 C28,52 20,44 23,35 C25,30 29,28 33,28 C29,30 27,36 28,42 C29,47 34,52 36,54" fill="${c.g2}" opacity="0.5"/>
+    <ellipse cx="50" cy="62" rx="16" ry="12" fill="url(#fg${u})"/>
+    <ellipse cx="50" cy="52" rx="14" ry="10" fill="${c.g1}"/>
+    <ellipse cx="50" cy="44" rx="14" ry="11" fill="url(#fg${u})"/>
+    <ellipse cx="50" cy="44" rx="14" ry="11" fill="url(#fd${u})" opacity="0.55"/>
+    <ellipse cx="50" cy="62" rx="16" ry="12" fill="url(#fd${u})" opacity="0.45"/>
+    <circle cx="44" cy="43" r="4" fill="#040010"/>
+    <circle cx="45" cy="42" r="1.8" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="56" cy="43" r="4" fill="#040010"/>
+    <circle cx="57" cy="42" r="1.8" fill="rgba(255,255,255,0.8)"/>
+    <path d="M50,74 Q54,79 60,82 Q66,84 70,80 Q74,76 72,70 Q74,66 70,62" fill="none" stroke="${c.g1}" stroke-width="5" stroke-linecap="round"/>
+    <path d="M70,62 Q78,56 76,50 Q74,45 68,46" fill="none" stroke="${c.g1}" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M68,46 Q68,38 64,34 L60,28" fill="none" stroke="${c.g3}" stroke-width="3" stroke-linecap="round"/>
+    <path d="M60,28 L56,22" stroke="${c.g3}" stroke-width="2" stroke-linecap="round"/>
+    <path d="M47,57 Q50,55 53,57" fill="none" stroke="${c.g2}" stroke-width="1" opacity="0.6"/>
+    <path d="M46,63 Q50,61 54,63" fill="none" stroke="${c.g2}" stroke-width="1" opacity="0.6"/>
+  `,
+  Sagitario: (c,u) => `
+    <path d="M12,82 Q20,72 32,74 Q40,76 42,82 Q32,84 20,84 Z" fill="${c.g1}" opacity="0.5"/>
+    <path d="M25,80 Q34,70 50,68 Q58,67 64,60" fill="none" stroke="${c.g1}" stroke-width="6" stroke-linecap="round"/>
+    <path d="M64,60 Q74,52 80,42" fill="none" stroke="${c.g1}" stroke-width="5" stroke-linecap="round"/>
+    <ellipse cx="50" cy="53" rx="13" ry="10" fill="url(#fg${u})"/>
+    <ellipse cx="50" cy="53" rx="13" ry="10" fill="url(#fd${u})" opacity="0.5"/>
+    <circle cx="50" cy="38" r="13" fill="url(#fg${u})"/>
+    <circle cx="50" cy="38" r="13" fill="url(#fd${u})" opacity="0.5"/>
+    <circle cx="46" cy="37" r="3.5" fill="#040010"/>
+    <circle cx="47" cy="36" r="1.5" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="55" cy="37" r="3.5" fill="#040010"/>
+    <circle cx="56" cy="36" r="1.5" fill="rgba(255,255,255,0.8)"/>
+    <path d="M57,30 Q66,27 72,32" fill="${c.g1}" opacity="0.65"/>
+    <path d="M62,48 Q72,38 78,24" fill="none" stroke="${c.g1}" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M78,18 Q86,30 78,42" fill="none" stroke="${c.g3}" stroke-width="3" stroke-linecap="round"/>
+    <line x1="78" y1="18" x2="78" y2="42" stroke="${c.g3}" stroke-width="1.2" opacity="0.7"/>
+    <line x1="18" y1="64" x2="76" y2="32" stroke="${c.g3}" stroke-width="2"/>
+    <path d="M76,32 L70,31 L73,37 L76,32 Z" fill="${c.g3}"/>
+    <path d="M20,64 Q16,58 22,62" fill="${c.g1}" opacity="0.6"/>
+    <path d="M20,64 Q24,70 18,66" fill="${c.g1}" opacity="0.6"/>
+  `,
+  Capricornio: (c,u) => `
+    <path d="M36,74 Q50,70 64,74 Q60,92 50,94 Q40,92 36,74 Z" fill="url(#fg${u})" opacity="0.7"/>
+    <path d="M36,82 Q50,87 64,82 Q60,92 50,94 Q40,92 36,82" fill="${c.g2}" opacity="0.45"/>
+    <path d="M36,82 Q26,90 20,82 Q27,74 36,82" fill="${c.g1}" opacity="0.6"/>
+    <path d="M64,82 Q74,90 80,82 Q73,74 64,82" fill="${c.g1}" opacity="0.6"/>
+    <ellipse cx="50" cy="64" rx="18" ry="13" fill="url(#fg${u})"/>
+    <ellipse cx="50" cy="48" rx="18" ry="16" fill="url(#fg${u})"/>
+    <ellipse cx="50" cy="48" rx="18" ry="16" fill="url(#fd${u})" opacity="0.55"/>
+    <ellipse cx="50" cy="64" rx="18" ry="13" fill="url(#fd${u})" opacity="0.4"/>
+    <path d="M36,38 C28,28 30,14 40,12 C46,11 50,14 48,22 C46,27 40,28 38,34" fill="${c.g1}"/>
+    <path d="M64,38 C72,28 70,14 60,12 C54,11 50,14 52,22 C54,27 60,28 62,34" fill="${c.g1}"/>
+    <path d="M37,38 C30,30 31,18 38,15 C35,18 33,24 34,30 C35,34 38,37 39,40" fill="${c.g2}" opacity="0.5"/>
+    <path d="M63,38 C70,30 69,18 62,15 C65,18 67,24 66,30 C65,34 62,37 61,40" fill="${c.g2}" opacity="0.5"/>
+    <circle cx="43" cy="48" r="5" fill="#040010"/>
+    <circle cx="44.5" cy="46.5" r="2" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="57" cy="48" r="5" fill="#040010"/>
+    <circle cx="58.5" cy="46.5" r="2" fill="rgba(255,255,255,0.8)"/>
+    <ellipse cx="50" cy="58" rx="7" ry="5" fill="${c.g2}" opacity="0.7"/>
+    <circle cx="47.5" cy="57" r="2.5" fill="#040010" opacity="0.75"/>
+    <circle cx="52.5" cy="57" r="2.5" fill="#040010" opacity="0.75"/>
+    <path d="M46,62 Q50,70 54,62 Q50,74 46,62" fill="${c.g1}" opacity="0.65"/>
+    <path d="M40,78 Q50,74 60,78" fill="none" stroke="${c.g3}" stroke-width="1" opacity="0.5"/>
+    <path d="M38,84 Q50,80 62,84" fill="none" stroke="${c.g3}" stroke-width="1" opacity="0.45"/>
+  `,
+  Acuario: (c,u) => `
+    <path d="M8,75 Q18,68 28,75 Q38,82 48,75 Q58,68 68,75 Q78,82 88,75 L88,82 Q78,89 68,82 Q58,75 48,82 Q38,89 28,82 Q18,75 8,82 Z" fill="url(#fg${u})" opacity="0.8"/>
+    <path d="M8,63 Q18,56 28,63 Q38,70 48,63 Q58,56 68,63 Q78,70 88,63 L88,70 Q78,77 68,70 Q58,63 48,70 Q38,77 28,70 Q18,63 8,70 Z" fill="${c.g1}" opacity="0.5"/>
+    <path d="M38,52 Q44,48 50,50 Q56,48 62,52 Q60,44 50,42 Q40,44 38,52 Z" fill="url(#fg${u})"/>
+    <circle cx="50" cy="30" r="13" fill="url(#fg${u})"/>
+    <circle cx="50" cy="30" r="13" fill="url(#fd${u})" opacity="0.5"/>
+    <circle cx="46" cy="29" r="3.5" fill="#040010"/>
+    <circle cx="47" cy="28" r="1.5" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="55" cy="29" r="3.5" fill="#040010"/>
+    <circle cx="56" cy="28" r="1.5" fill="rgba(255,255,255,0.8)"/>
+    <path d="M42,43 Q32,46 24,54" fill="none" stroke="${c.g1}" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M24,52 Q18,58 20,64" fill="none" stroke="${c.g1}" stroke-width="5" stroke-linecap="round"/>
+    <path d="M18,62 Q14,56 16,50 Q18,46 22,48" fill="${c.g1}" opacity="0.75"/>
+    <ellipse cx="19" cy="50" rx="7" ry="4" fill="${c.g1}" opacity="0.85"/>
+    <path d="M58,43 Q68,44 74,50" fill="none" stroke="${c.g1}" stroke-width="5" stroke-linecap="round"/>
+  `,
+  Piscis: (c,u) => `
+    <ellipse cx="34" cy="36" rx="16" ry="9" fill="url(#fg${u})" transform="rotate(-40 34 36)"/>
+    <ellipse cx="34" cy="36" rx="16" ry="9" fill="url(#fd${u})" opacity="0.5" transform="rotate(-40 34 36)"/>
+    <path d="M18,22 Q12,16 16,26 Q10,18 18,19 Z" fill="${c.g1}" opacity="0.85"/>
+    <circle cx="49" cy="26" r="4.5" fill="#040010"/>
+    <circle cx="50.5" cy="24.5" r="1.8" fill="rgba(255,255,255,0.8)"/>
+    <path d="M30,27 Q34,20 40,27" fill="${c.g1}" opacity="0.55"/>
+    <path d="M30,34 Q33,28 39,33" fill="none" stroke="${c.g3}" stroke-width="1" opacity="0.5"/>
+    <path d="M26,37 Q29,31 35,36" fill="none" stroke="${c.g3}" stroke-width="1" opacity="0.5"/>
+    <ellipse cx="66" cy="64" rx="16" ry="9" fill="url(#fg${u})" transform="rotate(140 66 64)"/>
+    <ellipse cx="66" cy="64" rx="16" ry="9" fill="url(#fd${u})" opacity="0.5" transform="rotate(140 66 64)"/>
+    <path d="M82,78 Q88,84 84,74 Q90,82 82,81 Z" fill="${c.g1}" opacity="0.85"/>
+    <circle cx="51" cy="74" r="4.5" fill="#040010"/>
+    <circle cx="52.5" cy="72.5" r="1.8" fill="rgba(255,255,255,0.8)"/>
+    <path d="M60,73 Q66,80 72,73" fill="${c.g1}" opacity="0.55"/>
+    <path d="M70,66 Q67,72 61,67" fill="none" stroke="${c.g3}" stroke-width="1" opacity="0.5"/>
+    <path d="M74,63 Q71,69 65,64" fill="none" stroke="${c.g3}" stroke-width="1" opacity="0.5"/>
+    <circle cx="50" cy="50" r="20" fill="none" stroke="${c.ring}" stroke-width="1" stroke-dasharray="3,5" opacity="0.4"/>
+    <line x1="50" y1="44" x2="50" y2="56" stroke="${c.ring}" stroke-width="1.5" opacity="0.5"/>
+    <circle cx="50" cy="50" r="5" fill="${c.glow}" opacity="0.4" filter="url(#gf${u})"/>
+    <circle cx="50" cy="50" r="3" fill="${c.g3}" opacity="0.9"/>
+  `,
+};
+
+function makeIcon(signName, size) {
+  const elKey = SIGN_EL[signName] || 'air';
+  const c = ELEM[elKey];
+  const uid = 'p' + (_uid++);
+  const s = size || 64;
+  // Fewer background stars on mobile
+  const bgStarData = isTouch
+    ? [[18,7,1.2],[85,9,1.0],[96,46,1.1],[80,91,1.2],[6,76,0.85],[74,14,0.8],[70,4,1.3],[93,36,0.85]]
+    : [[8,12,0.9],[18,7,1.2],[85,9,1.0],[93,19,0.75],[96,46,1.1],[91,73,0.85],[80,91,1.2],[55,96,0.7],[20,93,0.95],[6,76,0.85],[5,43,1.1],[14,32,0.7],[74,14,0.8],[89,59,0.95],[30,7,0.85],[70,4,1.3],[46,94,0.65],[4,61,0.75],[93,36,0.85],[65,94,1.0]];
+  const bgStars = bgStarData.map(([x,y,r])=>`<circle cx="${x}" cy="${y}" r="${r}" fill="white" opacity="${(0.35+Math.abs(Math.sin(x*y))*0.45).toFixed(2)}"/>`).join('');
+  const fig = FIGS[signName] ? FIGS[signName](c,uid) : '';
+  // On mobile: skip SVG blur filters (feGaussianBlur) — very expensive on mobile GPUs
+  const filters = isTouch ? '' : `
+      <filter id="gf${uid}" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="3"/>
+      </filter>
+      <filter id="rs${uid}" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="2.5"/>
+      </filter>`;
+  const glowRing = isTouch ? '' : `<circle cx="50" cy="50" r="44" fill="none" stroke="${c.ring}" stroke-width="5" opacity="0.25" filter="url(#rs${uid})"/>`;
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="${s}" height="${s}" style="display:block">
+    <defs>
+      <radialGradient id="bg${uid}" cx="50%" cy="45%" r="60%">
+        <stop offset="0%" stop-color="#1c0840"/>
+        <stop offset="55%" stop-color="#0d0425"/>
+        <stop offset="100%" stop-color="#040115"/>
+      </radialGradient>
+      <radialGradient id="nb${uid}" cx="50%" cy="65%" r="45%">
+        <stop offset="0%" stop-color="${c.glow}" stop-opacity="0.45"/>
+        <stop offset="100%" stop-color="${c.glow}" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="fg${uid}" cx="36%" cy="28%" r="70%">
+        <stop offset="0%" stop-color="${c.g3}"/>
+        <stop offset="55%" stop-color="${c.g1}"/>
+        <stop offset="100%" stop-color="${c.g2}"/>
+      </radialGradient>
+      <radialGradient id="fd${uid}" cx="32%" cy="25%" r="65%">
+        <stop offset="0%" stop-color="rgba(255,255,255,0.45)"/>
+        <stop offset="45%" stop-color="rgba(255,255,255,0.08)"/>
+        <stop offset="100%" stop-color="rgba(0,0,0,0.35)"/>
+      </radialGradient>${filters}
+      <clipPath id="cp${uid}"><rect width="100" height="100" rx="14"/></clipPath>
+    </defs>
+    <g clip-path="url(#cp${uid})">
+      <rect width="100" height="100" fill="url(#bg${uid})"/>
+      ${bgStars}
+      <ellipse cx="50" cy="65" rx="38" ry="32" fill="url(#nb${uid})"/>
+      ${glowRing}
+      <circle cx="50" cy="50" r="44" fill="none" stroke="${c.ring}" stroke-width="0.9" stroke-dasharray="2.5,5" opacity="0.8"/>
+      <circle cx="50" cy="50" r="44" fill="none" stroke="white" stroke-width="0.4" stroke-dasharray="0.5,12" opacity="0.35" stroke-dashoffset="8"/>
+      ${fig}
+      <g transform="translate(79,15)">
+        <circle cx="0" cy="0" r="7.5" fill="${c.moon}" opacity="0.65"/>
+        <circle cx="4" cy="-1.5" r="6" fill="#0d0425"/>
+      </g>
+      <circle cx="87" cy="30" r="1.5" fill="white" opacity="0.75"/>
+      <circle cx="14" cy="20" r="1.8" fill="${c.moon}" opacity="0.75"/>
+      <circle cx="90" cy="68" r="1.1" fill="white" opacity="0.55"/>
+      <rect width="100" height="100" fill="none" stroke="${c.ring}" stroke-width="1.5" opacity="0.5" rx="14"/>
+    </g>
+  </svg>`;
+}
+
+// Generic sparkle for placeholder
+function sparkleIcon() {
+  const uid = 'sp' + (_uid++);
+  return `<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" width="90" height="90" style="display:block">
+    <defs>
+      <radialGradient id="sbg${uid}" cx="50%" cy="45%" r="60%"><stop offset="0%" stop-color="#2a1060"/><stop offset="100%" stop-color="#050218"/></radialGradient>
+      <radialGradient id="sfg${uid}" cx="36%" cy="28%" r="70%"><stop offset="0%" stop-color="#d0a8f8"/><stop offset="60%" stop-color="#9060d8"/><stop offset="100%" stop-color="#2a0870"/></radialGradient>
+      <filter id="sgf${uid}" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3.5"/></filter>
+      <clipPath id="scp${uid}"><rect width="100" height="100" rx="14"/></clipPath>
+    </defs>
+    <g clip-path="url(#scp${uid})">
+      <rect width="100" height="100" fill="url(#sbg${uid})"/>
+      ${[8,14,85,92,95,88,78,52,18,4,5,12,72,87,28,68,44,3,91,63].map((x,i)=>{const y=[14,8,10,21,48,75,93,97,95,78,45,34,15,61,8,5,95,63,38,96][i];return `<circle cx="${x}" cy="${y}" r="${(0.7+Math.abs(Math.sin(x*y))*0.6).toFixed(1)}" fill="white" opacity="${(0.3+Math.abs(Math.sin(x*y))*0.5).toFixed(2)}"/>`;}).join('')}
+      <ellipse cx="50" cy="60" rx="32" ry="28" fill="rgba(140,80,240,0.3)" filter="url(#sgf${uid})"/>
+      <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(180,130,255,0.75)" stroke-width="0.9" stroke-dasharray="2.5,5" opacity="0.8"/>
+      <circle cx="50" cy="50" r="30" fill="url(#sfg${uid})" opacity="0.9"/>
+      <circle cx="50" cy="50" r="30" fill="none" stroke="rgba(200,170,255,0.7)" stroke-width="1.5"/>
+      ${[[50,24,9],[50,76,9],[24,50,9],[76,50,9],[32,32,6.5],[68,32,6.5],[32,68,6.5],[68,68,6.5]].map(([x,y,r],i)=>`<circle cx="${x}" cy="${y}" r="${r}" fill="rgba(220,200,255,0.85)"><animate attributeName="opacity" values="1;0.4;1" dur="${2+i*.25}s" repeatCount="indefinite"/></circle>`).join('')}
+      <line x1="50" y1="24" x2="50" y2="76" stroke="rgba(200,180,255,0.35)" stroke-width="1.2"/>
+      <line x1="24" y1="50" x2="76" y2="50" stroke="rgba(200,180,255,0.35)" stroke-width="1.2"/>
+      <line x1="32" y1="32" x2="68" y2="68" stroke="rgba(200,180,255,0.3)" stroke-width="1.2"/>
+      <line x1="68" y1="32" x2="32" y2="68" stroke="rgba(200,180,255,0.3)" stroke-width="1.2"/>
+      <ellipse cx="38" cy="32" rx="14" ry="8" fill="rgba(255,255,255,0.18)" opacity="0.9"/>
+      <g transform="translate(79,15)"><circle cx="0" cy="0" r="7.5" fill="#d0b060" opacity="0.6"/><circle cx="4" cy="-1.5" r="6" fill="#0d0425"/></g>
+      <rect width="100" height="100" fill="none" stroke="rgba(170,130,255,0.55)" stroke-width="1.5" rx="14"/>
+    </g>
+  </svg>`;
+}
+
+/* ─── Sign data ─── */
+const SIGNS = [
+  {name:'Aries',dates:'Mar 21–Abr 19',elem:'Fuego',ruler:'Marte',trait:'apasionado y directo',energy:'ardiente'},
+  {name:'Tauro',dates:'Abr 20–May 20',elem:'Tierra',ruler:'Venus',trait:'paciente y sensual',energy:'estable'},
+  {name:'Géminis',dates:'May 21–Jun 20',elem:'Aire',ruler:'Mercurio',trait:'curioso y versátil',energy:'mental'},
+  {name:'Cáncer',dates:'Jun 21–Jul 22',elem:'Agua',ruler:'la Luna',trait:'intuitivo y protector',energy:'emocional'},
+  {name:'Leo',dates:'Jul 23–Ago 22',elem:'Fuego',ruler:'el Sol',trait:'creativo y generoso',energy:'radiante'},
+  {name:'Virgo',dates:'Ago 23–Sep 22',elem:'Tierra',ruler:'Mercurio',trait:'analítico y servicial',energy:'precisa'},
+  {name:'Libra',dates:'Sep 23–Oct 22',elem:'Aire',ruler:'Venus',trait:'diplomático y armonioso',energy:'equilibrada'},
+  {name:'Escorpio',dates:'Oct 23–Nov 21',elem:'Agua',ruler:'Plutón',trait:'intenso y transformador',energy:'magnética'},
+  {name:'Sagitario',dates:'Nov 22–Dic 21',elem:'Fuego',ruler:'Júpiter',trait:'optimista y aventurero',energy:'expansiva'},
+  {name:'Capricornio',dates:'Dic 22–Ene 19',elem:'Tierra',ruler:'Saturno',trait:'disciplinado y ambicioso',energy:'persistente'},
+  {name:'Acuario',dates:'Ene 20–Feb 18',elem:'Aire',ruler:'Urano',trait:'innovador y humanitario',energy:'eléctrica'},
+  {name:'Piscis',dates:'Feb 19–Mar 20',elem:'Agua',ruler:'Neptuno',trait:'compasivo y soñador',energy:'fluida'},
+];
+
+const READINGS = {
+  Aries:{texts:['La energía de Marte te impulsa hoy con fuerza arrolladora. Es un día ideal para iniciar proyectos que llevas tiempo postergando. Tu determinación será tu mayor aliada; cada barrera es solo un trampolín disfrazado.','Hoy los astros te invitan a liderar con confianza. Tu carácter fuerte atraerá a personas que necesitan dirección. Aprovecha la energía del mediodía para tomar decisiones: tu instinto estará afinado como nunca.','Un día lleno de oportunidades inesperadas. Mantén la mente abierta y no rechaces ninguna propuesta sin analizarla. Tu valentía natural te abrirá puertas que para otros permanecen cerradas.'],tags:['Decisión','Valentía','Nuevos comienzos'],colors:['Rojo','Naranja'],numbers:['7','13']},
+  Tauro:{texts:['Venus ilumina tu camino con luz cálida. Hoy es excelente para disfrutar placeres simples: una buena comida, música que te mueva o tiempo de calidad con alguien especial.','La estabilidad que tanto valoras se fortalece hoy. En el trabajo, tu metodología y perseverancia darán frutos que otros tardan en ver. Las cosas buenas no se apresuran, maduran.','Tu sexto sentido sobre el dinero está muy activo hoy. Tu pragmatismo te permitirá distinguir lo genuino de lo ilusorio.'],tags:['Abundancia','Disfrute','Paciencia'],colors:['Verde','Rosa'],numbers:['6','24']},
+  Géminis:{texts:['Mercurio está en perfecta armonía con tu mente inquieta. Las conversaciones de hoy pueden llevarte a descubrimientos fascinantes; la idea más disparatada podría ser la más brillante.','Hoy la curiosidad te llevará por caminos inesperados. Para ti la flexibilidad es natural. Abraza lo imprevisto y encontrarás en él una aventura que no sabías que necesitabas.','Tu habilidad para conectar personas y unir mundos brilla especialmente hoy. Alguien en tu círculo necesita ese puente que solo tú puedes construir.'],tags:['Comunicación','Adaptabilidad','Ingenio'],colors:['Amarillo','Violeta'],numbers:['5','14']},
+  Cáncer:{texts:['La Luna te envuelve hoy en energía de profunda intuición. Confía en lo que sientes más allá de lo que piensas; tu corazón accede a verdades que la mente racional tarda en alcanzar.','Hoy tu empatía está a flor de piel. Las personas buscarán tu comprensión y tú tendrás exactamente lo que necesitan. Recuerda también cuidarte a ti mismo.','Es un día propicio para cerrar ciclos emocionales pendientes. Aquello que guardaste en silencio merece ser expresado con delicadeza.'],tags:['Intuición','Familia','Empatía'],colors:['Plateado','Blanco'],numbers:['2','11']},
+  Leo:{texts:['El Sol te regala hoy una dosis extra de magnetismo irresistible. Donde vayas, tu presencia será notada y valorada. Es el día perfecto para presentaciones o reuniones importantes.','La creatividad fluye por tus venas con intensidad especial hoy. Si has postergado un proyecto artístico, este es el momento de retomarlo con energía renovada.','Tu generosidad encontrará hoy su mayor recompensa. Un gesto amable hacia alguien que lo necesita se multiplicará de maneras que no imaginas.'],tags:['Creatividad','Liderazgo','Generosidad'],colors:['Dorado','Naranja'],numbers:['1','19']},
+  Virgo:{texts:['Tu mente analítica alcanza hoy niveles de precisión extraordinarios. Un problema que parecía sin solución se revelará; a veces la respuesta está en los detalles que otros pasan por alto.','Hoy es ideal para organizar, planificar y poner orden. Tu eficiencia natural se potencia con una energía cósmica que favorece la productividad.','El cuidado que pones en todo se convierte hoy en un imán de reconocimiento. Alguien importante notará tu dedicación y eso podría abrir una puerta esperada.'],tags:['Precisión','Salud','Organización'],colors:['Beige','Verde oscuro'],numbers:['4','22']},
+  Libra:{texts:['Venus te regala hoy un aura de armonía que atrae las mejores relaciones. Las conversaciones de hoy podrían resultar decisivas; tu capacidad de escuchar y encontrar el punto medio es un don muy valioso.','El equilibrio que buscas constantemente se manifiesta hoy de forma natural. Los astros trabajan a tu favor para que todo caiga en su lugar.','Hoy tu sentido estético está en su punto más alto. Es un buen día para rodearte de belleza o crear algo que refleje tu visión del mundo.'],tags:['Armonía','Relaciones','Belleza'],colors:['Rosa','Azul claro'],numbers:['6','15']},
+  Escorpio:{texts:['Plutón intensifica hoy tu ya poderosa percepción. Puedes ver más allá de las apariencias y detectar verdades ocultas. Usa esta habilidad con sabiduría y compasión.','Es un día de transformación profunda. Algo dentro de ti está listo para cambiar, y resistirte solo prolongaría el proceso. Los escorpiones no temen renacer; esa es su mayor fortaleza.','Hoy tu magnetismo personal está en su punto álgido. Utiliza esta energía para fortalecer vínculos que realmente te importan.'],tags:['Transformación','Intensidad','Intuición'],colors:['Negro','Rojo oscuro'],numbers:['8','18']},
+  Sagitario:{texts:['Júpiter expande hoy tus horizontes con energía optimista. El mundo es más grande de lo que crees y hoy podrías recibir una señal de que el próximo gran capítulo está por comenzar.','Tu espíritu aventurero encuentra hoy el combustible perfecto. Una conversación que amplíe tu visión puede cambiar tu perspectiva de manera duradera.','La búsqueda de verdad que tanto te motiva encuentra hoy respuestas inesperadas. Una conversación aparentemente casual podría contener la clave que buscabas.'],tags:['Aventura','Optimismo','Expansión'],colors:['Morado','Azul marino'],numbers:['3','21']},
+  Capricornio:{texts:['Saturno te recuerda hoy que la perseverancia es la virtud más noble. Un logro que has estado construyendo pacientemente está más cerca de lo que crees.','Hoy tu disciplina y enfoque son admirados por quienes te rodean. Tu capacidad de mantener el rumbo cuando otros se desvían es tu mayor diferenciador.','Las responsabilidades de hoy se transforman en oportunidades si cambias el lente. Un desafío laboral podría revelar un talento que no sabías que tenías.'],tags:['Disciplina','Logro','Persistencia'],colors:['Negro','Marrón'],numbers:['8','10']},
+  Acuario:{texts:['Urano activa hoy tu mente visionaria con originalidad pura. Las ideas que se te ocurran hoy pueden parecer adelantadas a su tiempo, y probablemente lo sean.','Tu espíritu humanitario encuentra hoy una causa que vale la pena. Pequeños actos de conciencia colectiva tienen hoy un impacto mucho mayor del que imaginas.','La tecnología o el pensamiento innovador juegan hoy un papel protagonista. Una solución creativa a un problema cotidiano podría abrirte posibilidades inesperadas.'],tags:['Innovación','Comunidad','Libertad'],colors:['Eléctrico','Turquesa'],numbers:['4','17']},
+  Piscis:{texts:['Neptuno sumerge hoy tu mundo en magia y posibilidad. Tu imaginación está en su pico más alto; cualquier proyecto creativo o espiritual encontrará el flujo perfecto.','Tu sensibilidad hoy es un instrumento finamente afinado. Puedes sentir las emociones de las personas antes de que las expresen, lo que te hace un apoyo invaluable.','Las sincronías y coincidencias significativas se multiplican hoy. El universo te habla a través de símbolos y encuentros fortuitos.'],tags:['Sueños','Creatividad','Espiritualidad'],colors:['Azul marino','Lila'],numbers:['7','12']},
+};
+
+const PRESETS = [
+  {label:'¿Cómo estará mi amor hoy?',key:'amor'},
+  {label:'¿Es buen día para tomar riesgos?',key:'riesgo'},
+  {label:'¿Cómo me irá en el trabajo?',key:'trabajo'},
+  {label:'¿Debo hablar con esa persona?',key:'comunicacion'},
+  {label:'¿Es buen día para gastar dinero?',key:'dinero'},
+  {label:'¿Qué me depara la tarde?',key:'tarde'},
+  {label:'¿Debo tomar esa decisión hoy?',key:'decision'},
+  {label:'¿Cómo está mi energía hoy?',key:'energia'},
+];
+
+function buildAnswer(sign, key) {
+  const s = sign;
+  const pool = {
+    amor:[{text:`En el amor, tu naturaleza ${s.trait} resulta especialmente magnética hoy. La influencia de ${s.ruler} crea un ambiente de conexión genuina; si hay alguien en tu mente, este es el momento de dar una señal.`,verdict:'yes'},{text:`${s.ruler} activa hoy tu corazón con una energía ${s.energy} que atrae sin esfuerzo. En el amor, lo auténtico triunfa sobre lo calculado; muéstrate como eres y las personas correctas se acercarán.`,verdict:'yes'}],
+    riesgo:[{text:`Tu energía ${s.energy} de hoy requiere distinguir entre valentía e imprudencia. Los riesgos que se alinean con tus valores y que has pensado bien tienen la bendición de ${s.ruler}; los impulsivos, no.`,verdict:'maybe'},{text:`Bajo ${s.ruler}, el universo favorece los movimientos audaces pero conscientes. Siendo ${s.trait}, confía en ese primer instinto antes de que la duda lo apague.`,verdict:'yes'},{text:`Hoy no es el mejor día para apostar. ${s.ruler} pide cautela y reflexión; los impulsos del momento pueden costar más de lo que parecen. Espera a que la energía se asiente.`,verdict:'no'}],
+    trabajo:[{text:`En el trabajo, tu energía ${s.energy} de hoy es uno de tus mayores activos. ${s.ruler} agudiza tu capacidad de ver soluciones donde otros ven obstáculos. Alguien importante presta más atención de lo que crees.`,verdict:'yes'},{text:`${s.ruler} potencia hoy tu lado ${s.trait}, y en el entorno profesional eso se traduce en reconocimiento. Propuestas y conversaciones importantes fluirán con más naturalidad de lo habitual.`,verdict:'yes'}],
+    comunicacion:[{text:`Hablar con esa persona hoy está favorecido por ${s.ruler}, que da claridad y profundidad a tu expresión. Tu naturaleza ${s.trait} te permite encontrar las palabras exactas sin herir.`,verdict:'yes'},{text:`La energía ${s.energy} de hoy crea un puente natural entre lo que piensas y lo que dices. ${s.ruler} está de tu lado para que esa conversación tenga el tono correcto.`,verdict:'yes'}],
+    dinero:[{text:`En materia financiera, tu energía ${s.energy} te da hoy claridad para distinguir lo que vale de lo que solo brilla. ${s.ruler} favorece las decisiones meditadas; las grandes inversiones merecen un día más con la cabeza fría.`,verdict:'maybe'},{text:`${s.ruler} activa hoy tu instinto ${s.trait} también en lo económico. Buen día para revisar tus finanzas; menos favorable para gastos impulsivos.`,verdict:'maybe'},{text:`Los astros advierten hoy sobre el dinero. ${s.ruler} envía señales de cautela; lo que parece una buena oportunidad puede traer complicaciones que no ves aún. Mejor esperar.`,verdict:'no'}],
+    tarde:[{text:`La tarde llega cargada de una energía ${s.energy} que invita a conectar con lo que realmente te recarga. ${s.ruler} sugiere que los planes espontáneos serán mucho más satisfactorios que las obligaciones pendientes.`,verdict:'yes'},{text:`Para una persona ${s.trait} como tú, la tarde es el momento donde el día cobra sentido. ${s.ruler} favorece las conversaciones profundas y las actividades creativas.`,verdict:'yes'}],
+    decision:[{text:`Esa decisión que llevas cargando está lista para ser tomada. Tu naturaleza ${s.trait} ya sabe la respuesta; lo que bloquea no es falta de información sino miedo a equivocarte. ${s.ruler} te recuerda que el error honesto enseña más que la parálisis cómoda.`,verdict:'yes'},{text:`Bajo la energía ${s.energy} de hoy, tu mente e intuición están bien alineadas para decidir. ${s.ruler} favorece la acción reflexiva: no necesitas tener todo resuelto para dar el primer paso.`,verdict:'yes'}],
+    energia:[{text:`Tu energía hoy es genuinamente ${s.energy}, reflejo directo de tu esencia como persona ${s.trait}. ${s.ruler} te recarga especialmente cuando te permites fluir sin forzar ritmos que no son tuyos.`,verdict:'yes'},{text:`La influencia de ${s.ruler} te regala hoy una vitalidad ${s.energy} que se nota en todo lo que tocas. Úsala con intención; bien dirigida, puede mover mucho más de lo que imaginas.`,verdict:'yes'}],
+  };
+  const p = pool[key] || pool['energia'];
+  const d = new Date();
+  const seed = d.getDate() + sign.name.charCodeAt(0) + key.charCodeAt(0);
+  return p[seed % p.length];
+}
+
+const KMAP = {
+  amor:['amor','pareja','relaci','novio','novia','cita','romance','coraz','sentimi','enamorar'],
+  riesgo:['riesgo','apostar','aventur','atrever','salto','arriesg'],
+  trabajo:['trabajo','jefe','empleo','carrera','proyecto','oficina','reunión','ascenso'],
+  dinero:['dinero','gastar','invertir','comprar','financ','ahorro','pagar','caro'],
+  comunicacion:['hablar','decir','comunicar','conversa','llamar','mensaje','persona','confesar'],
+  tarde:['tarde','noche','despu','salir','plan','ocio','descanso'],
+  decision:['decid','elegir','opci','dilema','camino','escoger','debo','conviene'],
+  energia:['energi','ánimo','cansad','vital','fuerza','humor','siento'],
+};
+function normalizeText(t) {
+  return t.toLowerCase()
+    .replace(/á/g,'a').replace(/é/g,'e').replace(/í/g,'i').replace(/ó/g,'o').replace(/ú/g,'u').replace(/ü/g,'u').replace(/ñ/g,'n');
+}
+function detectKey(t) {
+  const tx = normalizeText(t);
+  const normKMAP = Object.fromEntries(Object.entries(KMAP).map(([k,ws])=>[k,ws.map(normalizeText)]));
+  let best='energia', sc=0;
+  for (const [k,ws] of Object.entries(normKMAP)) { const s=ws.filter(w=>tx.includes(w)).length; if(s>sc){sc=s;best=k;} }
+  return best;
+}
+
+function rng(seed) { let x=Math.sin(seed)*10000; return x-Math.floor(x); }
+function score(sn,k) { const d=new Date(); const s=(d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate())+sn.charCodeAt(0)*17+k.charCodeAt(0)*31; return Math.round(rng(s)*63+35); }
+function txIdx(sn) { const d=new Date(); const s=(d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate())+sn.charCodeAt(0)*13; return Math.floor(rng(s)*3); }
+
+let activeSign=null, hist=[], selPreset=null;
+const now = new Date();
+
+/* ─── Toast system ─── */
+let _toastTimer = null;
+function showToast(msg, type='ok', ms=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast toast-${type} show`;
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => t.classList.remove('show'), ms);
+}
+
+/* ─── Haptic feedback ─── */
+function haptic(ms) { try { navigator.vibrate && navigator.vibrate(ms||12); } catch(e){} }
+
+/* ─── localStorage persistence ─── */
+function saveHistory() {
+  try { localStorage.setItem('horo_hist', JSON.stringify(hist.slice(0,20))); } catch(e){}
+}
+function loadHistory() {
+  try { const h=localStorage.getItem('horo_hist'); if(h) hist=JSON.parse(h); } catch(e){}
+}
+function saveLastSign(name) {
+  try { localStorage.setItem('horo_last', name); } catch(e){}
+}
+function getLastSign() {
+  try { return localStorage.getItem('horo_last'); } catch(e){ return null; }
+}
+loadHistory();
+
+document.getElementById('date-line').textContent = now.toLocaleDateString('es-ES',{weekday:'long',year:'numeric',month:'long',day:'numeric'}).replace(/^\w/,c=>c.toUpperCase());
+
+// Placeholder icon
+document.getElementById('ph-icon').innerHTML = sparkleIcon();
+
+/* ─── Sign grid ─── */
+const sgrid = document.getElementById('sign-grid');
+SIGNS.forEach(sign => {
+  const btn = document.createElement('button');
+  btn.className = 'sign-btn';
+  btn.setAttribute('aria-label', sign.name);
+  btn.innerHTML = `<div class="sign-icon-wrap">${makeIcon(sign.name, 38)}</div><span class="nm">${sign.name}</span>`;
+  tiltBtn(btn);
+  btn.onclick = () => {
+    haptic(12);
+    document.querySelectorAll('.sign-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeSign = sign;
+    saveLastSign(sign.name);
+    document.getElementById('main-ui').style.display = 'block';
+    document.getElementById('ph').style.display = 'none';
+    selPreset = null;
+    updateShareURL();
+    renderAll();
+    if (isTouch) btn.scrollIntoView({behavior:'smooth',block:'nearest'});
+  };
+  sgrid.appendChild(btn);
+});
+
+/* ─── URL hash load + last sign restore ─── */
+window.addEventListener('load', () => {
+  const h = location.hash.slice(1).toLowerCase();
+  if (h) {
+    const idx = SIGNS.findIndex(s => s.name.toLowerCase() === h);
+    if (idx >= 0) { setTimeout(() => sgrid.children[idx].click(), 150); }
+  } else {
+    const last = getLastSign();
+    if (last) {
+      const idx = SIGNS.findIndex(s => s.name === last);
+      if (idx >= 0) setTimeout(() => sgrid.children[idx].click(), 200);
+    }
+  }
+  if (navigator.share) document.getElementById('native-share-btn').classList.add('vis');
+});
+
+/* ─── Tab swipe on mobile ─── */
+(function(){
+  const TAB_NAMES = ['horoscopo','preguntas','historial'];
+  let tx0 = 0, ty0 = 0;
+  const mu = document.getElementById('main-ui');
+  mu.addEventListener('touchstart', e => {
+    tx0 = e.touches[0].clientX;
+    ty0 = e.touches[0].clientY;
+  }, {passive:true});
+  mu.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - tx0;
+    const dy = e.changedTouches[0].clientY - ty0;
+    if (Math.abs(dx) < 55 || Math.abs(dy) > Math.abs(dx)*0.75) return;
+    const cur = TAB_NAMES.findIndex((_,i) => document.querySelectorAll('.tab-btn')[i].classList.contains('active'));
+    if (dx < 0 && cur < 2) switchTab(TAB_NAMES[cur+1]);
+    if (dx > 0 && cur > 0) switchTab(TAB_NAMES[cur-1]);
+  }, {passive:true});
+})();
+
+window.switchTab = function(tab) {
+  const tabs = ['horoscopo','preguntas','historial'];
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active',tabs[i]===tab));
+  document.querySelectorAll('.panel').forEach((p,i) => p.classList.toggle('active',tabs[i]===tab));
+  document.querySelectorAll('#swipe-dots span').forEach((d,i) => d.classList.toggle('active',tabs[i]===tab));
+  haptic(8);
+};
+
+function renderAll() { renderHoroscopo(); renderPreguntas(); renderHistorial(); }
+
+function renderHoroscopo() {
+  const s=activeSign, d=READINGS[s.name];
+  const idx=txIdx(s.name);
+  const lv=score(s.name,'love'), wk=score(s.name,'work'), en=score(s.name,'energy'), lk=score(s.name,'luck');
+  const ni=Math.floor(rng(s.name.charCodeAt(0)+now.getDate())*2);
+  const num=d.numbers[ni%d.numbers.length];
+  const ci=Math.floor(rng(s.name.charCodeAt(2)+now.getMonth())*2);
+  const col=d.colors[ci%d.colors.length];
+  const rid = 'm'+Date.now();
+  const card = document.createElement('div'); card.className='gcard';
+  card.innerHTML=`
+    <div class="res-header">
+      <div class="header-icon-wrap">${makeIcon(s.name,72)}</div>
+      <div class="sign-meta"><h2>${s.name}</h2><p>${s.dates} &middot; ${s.elem} &middot; ${s.ruler}</p></div>
+    </div>
+    <p class="horo-text">${d.texts[idx]}</p>
+    <div class="meters">
+      <div class="meter"><div class="m-label">Amor</div><div class="m-bar"><div class="m-fill f-love" id="${rid}l" style="width:0"></div></div><div class="m-val">${lv}%</div></div>
+      <div class="meter"><div class="m-label">Trabajo</div><div class="m-bar"><div class="m-fill f-work" id="${rid}w" style="width:0"></div></div><div class="m-val">${wk}%</div></div>
+      <div class="meter"><div class="m-label">Energía</div><div class="m-bar"><div class="m-fill f-energy" id="${rid}e" style="width:0"></div></div><div class="m-val">${en}%</div></div>
+      <div class="meter"><div class="m-label">Suerte</div><div class="m-bar"><div class="m-fill f-luck" id="${rid}k" style="width:0"></div></div><div class="m-val">${lk}%</div></div>
+    </div>
+    <div class="tags">${d.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</div>
+    <div class="lucky-row">
+      <div class="li"><span class="lk">Número</span><span class="lv">${num}</span></div>
+      <div class="li"><span class="lk">Color</span><span class="lv">${col}</span></div>
+      <div class="li"><span class="lk">Elemento</span><span class="lv">${s.elem}</span></div>
+      <div class="li"><span class="lk">Planeta</span><span class="lv">${s.ruler}</span></div>
+    </div>`;
+  const p=document.getElementById('panel-horoscopo'); p.innerHTML=''; p.appendChild(card);
+  tilt(card, 7);
+  requestAnimationFrame(() => setTimeout(() => {
+    const bl=document.getElementById(rid+'l'), bw=document.getElementById(rid+'w');
+    const be=document.getElementById(rid+'e'), bk=document.getElementById(rid+'k');
+    if(bl) bl.style.width=lv+'%';
+    if(bw) bw.style.width=wk+'%';
+    if(be) be.style.width=en+'%';
+    if(bk) bk.style.width=lk+'%';
+  }, 80));
+}
+
+function renderPreguntas() {
+  const card = document.createElement('div'); card.className='gcard';
+  card.innerHTML=`
+    <p class="q-intro">Los astros de <strong style="color:var(--gold)">${activeSign.name}</strong> responden directamente a lo que preguntes.</p>
+    <div class="preset-grid" id="pgrid"></div>
+    <div class="cust-area">
+      <label for="cq">O escribe tu propia pregunta:</label>
+      <div class="cust-row">
+        <input type="text" id="cq" inputmode="text" autocomplete="off" autocorrect="off" placeholder="¿Qué me dicen los astros sobre...?" maxlength="200"/>
+        <button class="ask-btn" onclick="askCustom()">Preguntar</button>
+      </div>
+    </div>
+    <div id="answer-zone"></div>`;
+  const p=document.getElementById('panel-preguntas'); p.innerHTML=''; p.appendChild(card);
+  tilt(card, 5);
+  const pg = document.getElementById('pgrid');
+  PRESETS.forEach((q,i) => {
+    const b = document.createElement('button');
+    b.className = 'preset-btn'+(selPreset===i?' sel':'');
+    b.textContent = q.label;
+    b.onclick = () => {
+      selPreset=i;
+      document.querySelectorAll('.preset-btn').forEach((x,j)=>x.classList.toggle('sel',j===i));
+      document.getElementById('cq').value='';
+      showAnswer(q.label, q.key);
+    };
+    pg.appendChild(b);
+  });
+  document.getElementById('cq').addEventListener('keydown', e => { if(e.key==='Enter'){e.target.blur();askCustom();} });
+}
+
+function showAnswer(question, key) {
+  const r = buildAnswer(activeSign, key);
+  const vc = r.verdict==='yes'?'v-yes':r.verdict==='no'?'v-no':'v-maybe';
+  const vl = r.verdict==='yes'?'Los astros lo favorecen':r.verdict==='no'?'Mejor esperar otro momento':'El resultado depende de ti';
+  const zone = document.getElementById('answer-zone');
+  zone.innerHTML=`<div class="answer-wrap" role="region" aria-live="polite">
+    <div class="a-label">Tu pregunta</div>
+    <div class="a-q">${escapeHtml(question)}</div>
+    <div class="a-text">${r.text}</div>
+    <span class="verdict ${vc}">${vl}</span>
+  </div>`;
+  if (isTouch) setTimeout(() => zone.scrollIntoView({behavior:'smooth',block:'start'}), 150);
+  haptic([10,30,10]);
+  hist.unshift({sign:activeSign.name,question,text:r.text,verdict:r.verdict,time:new Date().toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})});
+  if (hist.length>20) hist.pop();
+  saveHistory();
+  renderHistorial();
+}
+
+window.askCustom = function() {
+  const inp = document.getElementById('cq');
+  const q = inp.value.trim(); if(!q) return;
+  selPreset=null; document.querySelectorAll('.preset-btn').forEach(b=>b.classList.remove('sel'));
+  showAnswer(q, detectKey(q)); inp.value='';
+};
+
+function renderHistorial() {
+  const p = document.getElementById('panel-historial');
+  if (!hist.length) { p.innerHTML=`<div class="gcard"><div class="empty"><p style="font-size:2rem;margin-bottom:.6rem">✦</p><p>Aún no has hecho ninguna consulta.<br>Ve a "Consultar" para comenzar.</p></div></div>`; return; }
+  const vc=v=>v==='yes'?'v-yes':v==='no'?'v-no':'v-maybe';
+  const vl=v=>v==='yes'?'Favorable':v==='no'?'Desfavorable':'Neutro';
+  const card = document.createElement('div'); card.className='gcard';
+  card.innerHTML=`<div class="hist-list">${hist.map((h,i)=>`
+    <div class="hist-item" role="button" tabindex="0" onclick="replayHist(${i})" onkeydown="if(event.key==='Enter')replayHist(${i})">
+      <div class="h-q">${escapeHtml(h.question)}</div>
+      <div class="h-a">${escapeHtml(h.text)}</div>
+      <div class="h-meta">
+        <span>${escapeHtml(h.sign)} &middot; ${escapeHtml(h.time)}</span>
+        <span class="verdict ${vc(h.verdict)}" style="padding:2px 10px;font-size:.6rem">${vl(h.verdict)}</span>
+      </div>
+    </div>`).join('')}</div>`;
+  const clearBtn = document.createElement('button');
+  clearBtn.className = 'clear-hist-btn';
+  clearBtn.textContent = 'Borrar historial';
+  clearBtn.onclick = () => {
+    hist = [];
+    saveHistory();
+    renderHistorial();
+    showToast('Historial borrado', 'warn', 2200);
+  };
+  card.appendChild(clearBtn);
+  p.innerHTML=''; p.appendChild(card);
+}
+
+window.replayHist = function(i) {
+  const h = hist[i];
+  switchTab('preguntas'); renderPreguntas();
+  setTimeout(() => showAnswer(h.question, detectKey(h.question)), 80);
+};
+
+function updateShareURL() {
+  if (!activeSign) return;
+  const inp = document.getElementById('share-url');
+  if (location.protocol === 'file:') {
+    inp.value = '(descarga el archivo y compártelo directamente)';
+    inp.style.opacity = '0.5';
+    inp.style.fontStyle = 'italic';
+    inp.readOnly = true;
+  } else {
+    const url = location.href.split('#')[0] + '#' + activeSign.name.toLowerCase();
+    try { history.replaceState(null, '', '#' + activeSign.name.toLowerCase()); } catch(e) {}
+    inp.value = url;
+    inp.style.opacity = '';
+    inp.style.fontStyle = '';
+    inp.readOnly = false;
+  }
+}
+
+window.copyLink = function() {
+  if (location.protocol === 'file:') {
+    showToast('Usa el botón "Enviar app" para compartir', 'warn', 2800);
+    return;
+  }
+  const url = document.getElementById('share-url').value;
+  navigator.clipboard.writeText(url).then(() => {
+    showToast('✓ Enlace copiado', 'ok', 2200);
+  }).catch(() => {
+    const inp = document.getElementById('share-url');
+    inp.focus(); inp.setSelectionRange(0, 9999);
+    try { document.execCommand('copy'); showToast('✓ Enlace copiado', 'ok', 2200); } catch(e) {}
+  });
+};
+
+window.nativeShare = function() {
+  if (!activeSign) return;
+  const isFile = location.protocol === 'file:';
+  if (isFile) { shareFile(); return; }
+  navigator.share({
+    title: `Horóscopo Cósmico — ${activeSign.name}`,
+    text: `Mira el horóscopo de hoy para ${activeSign.name}`,
+    url: document.getElementById('share-url').value
+  }).catch(() => {});
+};
+
+window.shareWhatsApp = function() {
+  const isFile = location.protocol === 'file:';
+  const sign = activeSign ? activeSign.name : '';
+  const url = (!isFile && activeSign) ? document.getElementById('share-url').value : '';
+  const text = isFile
+    ? '¡Te comparto la app Horóscopo Cósmico! Descárgala y ábrela en tu navegador para ver tu horóscopo diario ✦'
+    : `¡Mira el horóscopo de ${sign} de hoy! ${url} ✦`;
+  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+};
+
+window.shareFile = async function() {
+  try {
+    const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    const blob = new Blob([html], {type: 'text/html'});
+    const file = new File([blob], 'horoscopo-cosmico.html', {type: 'text/html'});
+    if (navigator.canShare && navigator.canShare({files: [file]})) {
+      await navigator.share({
+        files: [file],
+        title: 'Horóscopo Cósmico',
+        text: '¡Mira tu horóscopo diario con esta app!'
+      });
+    } else {
+      downloadApp();
+    }
+  } catch(e) {
+    if (e.name !== 'AbortError') downloadApp();
+  }
+};
+
+/* ─── PWA Manifest (inline blob) ─── */
+(function(){
+  try {
+    const ic = `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='90' fill='%2307040f'/><rect width='512' height='512' rx='90' fill='url(%23g)'/><defs><radialGradient id='g' cx='50%25' cy='40%25' r='55%25'><stop offset='0%25' stop-color='%231c0840'/><stop offset='100%25' stop-color='%2307040f'/></radialGradient></defs><text x='50%25' y='54%25' font-size='330' text-anchor='middle' dominant-baseline='middle' fill='%23e8c46a'>✦</text></svg>`;
+    const m = {name:'Horóscopo Cósmico',short_name:'Horóscopo',description:'Tu horóscopo diario con los astros',start_url:location.href,display:'standalone',orientation:'portrait',background_color:'#07040f',theme_color:'#07040f',icons:[{src:ic,sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}]};
+    const blob = new Blob([JSON.stringify(m)],{type:'application/manifest+json'});
+    const link = document.createElement('link'); link.rel='manifest'; link.href=URL.createObjectURL(blob);
+    document.head.appendChild(link);
+  } catch(e){}
+})();
+
+/* ─── Download App ─── */
+window.downloadApp = function() {
+  try {
+    const html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    const blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'horoscopo-cosmico.html';
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    showToast('✓ Descargado — ábrelo en tu navegador', 'ok', 4000);
+  } catch(e) {
+    showToast('Usa el menú del navegador → "Guardar página como..."', 'warn', 4000);
+  }
+};
+
+/* ─── iOS detection ─── */
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1);
+const isStandalone = window.navigator.standalone===true || window.matchMedia('(display-mode:standalone)').matches;
+if (isIOS && !isStandalone) {
+  document.getElementById('ios-hint').classList.add('vis');
+}
+
+/* ─── PWA install (Android / Chrome) ─── */
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault(); deferredPrompt = e;
+  document.getElementById('pwa-btn').classList.add('vis');
+});
+window.pwaInstall = async function() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const {outcome} = await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('pwa-btn').classList.remove('vis');
+};
+window.addEventListener('appinstalled', ()=>{
+  document.getElementById('pwa-btn').classList.remove('vis');
+  document.getElementById('ios-hint').classList.remove('vis');
+});
+
+/* ─── Legacy compat ─── */
+window.dismissInstall = function() {};
+
+/* ─── Keyboard shortcuts (desktop) ─── */
+if (!isTouch) {
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    const TAB_NAMES = ['horoscopo','preguntas','historial'];
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      const cur = TAB_NAMES.findIndex((_,i) => document.querySelectorAll('.tab-btn')[i].classList.contains('active'));
+      if (e.key === 'ArrowRight' && cur < 2) switchTab(TAB_NAMES[cur+1]);
+      if (e.key === 'ArrowLeft' && cur > 0) switchTab(TAB_NAMES[cur-1]);
+    }
+    const n = parseInt(e.key);
+    if (n >= 1 && n <= 9 && sgrid.children[n-1]) sgrid.children[n-1].click();
+    if ((e.key === '0') && sgrid.children[9]) sgrid.children[9].click();
+    if (e.key === '-' && sgrid.children[10]) sgrid.children[10].click();
+    if (e.key === '=' && sgrid.children[11]) sgrid.children[11].click();
+  });
+}
+
+/* ─── Native share (show if supported) ─── */
+if (navigator.share) {
+  document.getElementById('native-share-btn').classList.add('vis');
+}
+</script>
+</body>
+</html>
