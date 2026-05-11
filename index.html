@@ -164,6 +164,11 @@ h1{font-size:clamp(1.5rem,6vw,2.4rem);font-weight:400;letter-spacing:.1em;backgr
 /* legacy compat */
 .install-banner{display:none}.install-text{}.install-btn{}.install-close{}
 
+/* daily context block inside answer */
+.day-context{background:rgba(232,196,106,.06);border:1px solid rgba(232,196,106,.18);border-radius:10px;padding:.85rem 1rem;margin-bottom:1rem}
+.dc-label{font-size:.58rem;color:var(--gold);text-transform:uppercase;letter-spacing:.14em;margin-bottom:5px;font-family:sans-serif}
+.dc-text{font-size:.8rem;color:var(--muted);font-style:italic;line-height:1.65;font-family:sans-serif}
+
 /* clear history */
 .clear-hist-btn{display:block;width:100%;margin-top:12px;padding:10px;font-size:.75rem;font-family:sans-serif;background:transparent;border:1px solid rgba(248,113,113,.25);border-radius:10px;cursor:pointer;color:var(--red);opacity:.7;transition:all .18s}
 .clear-hist-btn:active{opacity:1;background:rgba(248,113,113,.1)}
@@ -810,7 +815,9 @@ function buildAnswer(sign, key) {
   };
   const p = pool[key] || pool['energia'];
   const d = new Date();
-  const seed = d.getDate() + sign.name.charCodeAt(0) + key.charCodeAt(0);
+  // Seed includes daily horoscope text length so answers shift with each day's reading
+  const horoSeed = dailyHoroText.length % 7;
+  const seed = d.getDate() + sign.name.charCodeAt(0) + key.charCodeAt(0) + horoSeed;
   return p[seed % p.length];
 }
 
@@ -840,7 +847,7 @@ function rng(seed) { let x=Math.sin(seed)*10000; return x-Math.floor(x); }
 function score(sn,k) { const d=new Date(); const s=(d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate())+sn.charCodeAt(0)*17+k.charCodeAt(0)*31; return Math.round(rng(s)*63+35); }
 function txIdx(sn) { const d=new Date(); const s=(d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate())+sn.charCodeAt(0)*13; return Math.floor(rng(s)*3); }
 
-let activeSign=null, hist=[], selPreset=null;
+let activeSign=null, hist=[], selPreset=null, dailyHoroText='';
 const now = new Date();
 
 /* ─── Toast system ─── */
@@ -948,6 +955,7 @@ function renderAll() { renderHoroscopo(); renderPreguntas(); renderHistorial(); 
 function renderHoroscopo() {
   const s=activeSign, d=READINGS[s.name];
   const idx=txIdx(s.name);
+  dailyHoroText = d.texts[idx];
   const lv=score(s.name,'love'), wk=score(s.name,'work'), en=score(s.name,'energy'), lk=score(s.name,'luck');
   const ni=Math.floor(rng(s.name.charCodeAt(0)+now.getDate())*2);
   const num=d.numbers[ni%d.numbers.length];
@@ -1021,8 +1029,33 @@ function showAnswer(question, key) {
   const r = buildAnswer(activeSign, key);
   const vc = r.verdict==='yes'?'v-yes':r.verdict==='no'?'v-no':'v-maybe';
   const vl = r.verdict==='yes'?'Los astros lo favorecen':r.verdict==='no'?'Mejor esperar otro momento':'El resultado depende de ti';
+  // Pick a sentence from the daily horoscope most relevant to this category
+  const TOPIC_WORDS = {
+    amor:['amor','corazón','atrae','pareja','persona','conexión','relaci'],
+    riesgo:['valentía','audac','barrera','instinto','decisión','riesgo'],
+    trabajo:['trabajo','proyecto','reconoc','lideraz','solución','profesion','objetivo'],
+    comunicacion:['conversa','palabras','expresi','comunicar','claridad'],
+    dinero:['dinero','financi','pragmati','inversion'],
+    tarde:['tarde','momento','fluir','energía','recarga','actividad'],
+    decision:['decisión','camino','respuesta','elegir','paso'],
+    energia:['energía','vitalidad','fuerza','recarga','ritmo'],
+  };
+  const topicWords = TOPIC_WORDS[key] || [];
+  const sentences = dailyHoroText.split(/(?<=[.;!])/).map(s=>s.trim()).filter(s=>s.length>25);
+  // Score each sentence by how many topic words it contains
+  let bestSentence = sentences[0] || dailyHoroText;
+  let bestScore = -1;
+  sentences.forEach(sent => {
+    const sc = topicWords.filter(w => sent.toLowerCase().includes(w)).length;
+    if (sc > bestScore) { bestScore = sc; bestSentence = sent; }
+  });
+
   const zone = document.getElementById('answer-zone');
   zone.innerHTML=`<div class="answer-wrap" role="region" aria-live="polite">
+    ${dailyHoroText ? `<div class="day-context">
+      <div class="dc-label">Tu horóscopo de hoy</div>
+      <div class="dc-text">"${escapeHtml(bestSentence.replace(/^[.;\s]+/,''))}"</div>
+    </div>` : ''}
     <div class="a-label">Tu pregunta</div>
     <div class="a-q">${escapeHtml(question)}</div>
     <div class="a-text">${r.text}</div>
